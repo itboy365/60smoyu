@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<title>60s 摸鱼看板 · 打工人每日速览</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    :root {
+        --bg: #f8fafc;
+    }
+    * { -webkit-tap-highlight-color: transparent; }
+
+    body {
+        background-color: var(--bg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        min-height: 100vh;
+    }
+    /* 柔和渐变背景 */
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background:
+            radial-gradient(circle at 12% 15%, rgba(99, 102, 241, 0.10), transparent 42%),
+            radial-gradient(circle at 88% 8%, rgba(236, 72, 153, 0.09), transparent 42%),
+            radial-gradient(circle at 50% 95%, rgba(34, 197, 94, 0.07), transparent 45%),
+            linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        pointer-events: none;
+    }
+
+    /* 玻璃拟态头部 */
+    .glass-header {
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: saturate(180%) blur(14px);
+        -webkit-backdrop-filter: saturate(180%) blur(14px);
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    }
+
+    /* 卡片 */
+    .card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 28px -8px rgba(15, 23, 42, 0.10), 0 4px 12px -4px rgba(15, 23, 42, 0.05);
+    }
+    .card-header {
+        padding: 14px 18px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    .card-body { padding: 4px 18px 18px; flex: 1; }
+    .card-icon {
+        width: 30px; height: 30px;
+        border-radius: 9px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        color: #fff;
+        flex-shrink: 0;
+        box-shadow: 0 2px 6px -1px rgba(0,0,0,0.12);
+    }
+    .card-title { font-weight: 700; color: #0f172a; font-size: 14.5px; letter-spacing: 0.01em; }
+
+    /* 卡片网格 */
+    .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+        gap: 16px;
+        align-items: start;
+    }
+
+    /* Tab 切换 */
+    .tabs {
+        display: inline-flex;
+        gap: 2px;
+        background: #f1f5f9;
+        border-radius: 9px;
+        padding: 3px;
+    }
+    .tab-btn {
+        padding: 4px 11px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 6px;
+        color: #64748b;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        white-space: nowrap;
+    }
+    .tab-btn:hover { color: #334155; }
+    .tab-btn.active {
+        background: #fff;
+        color: #0f172a;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    }
+
+    /* 骨架屏 */
+    .skeleton-line {
+        height: 8px;
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
+        background-size: 400% 100%;
+        border-radius: 4px;
+        animation: shimmer 1.4s ease infinite;
+    }
+    @keyframes shimmer {
+        0% { background-position: 100% 50%; }
+        100% { background-position: 0 50%; }
+    }
+
+    /* 刷新按钮 */
+    .icon-btn {
+        width: 28px; height: 28px;
+        border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        color: #94a3b8;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        transition: all 0.18s;
+    }
+    .icon-btn:hover { color: #3b82f6; background: #eff6ff; }
+
+    /* 倒计时数字 */
+    .countdown-num {
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+    }
+
+    /* 列表项 */
+    .list-item {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 7px 0;
+        border-bottom: 1px dashed #f1f5f9;
+        font-size: 13.5px;
+        line-height: 1.55;
+        color: #334155;
+    }
+    .list-item:last-child { border-bottom: none; }
+    .list-item .idx {
+        font-size: 11px;
+        font-weight: 700;
+        color: #94a3b8;
+        min-width: 16px;
+        text-align: center;
+        margin-top: 2px;
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
+    }
+    .list-item .idx.top1 { color: #ef4444; }
+    .list-item .idx.top2 { color: #f97316; }
+    .list-item .idx.top3 { color: #eab308; }
+
+    /* 热度 */
+    .hot-num {
+        font-size: 11px;
+        color: #94a3b8;
+        flex-shrink: 0;
+        align-self: center;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* 一言 */
+    .quote-box {
+        position: relative;
+        padding: 14px 4px 6px;
+    }
+    .quote-mark {
+        font-family: Georgia, serif;
+        font-size: 56px;
+        line-height: 1;
+        color: #ddd6fe;
+        position: absolute;
+        top: 0; left: -4px;
+        user-select: none;
+    }
+
+    /* 天气 */
+    .weather-temp {
+        font-size: 34px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* 必应壁纸卡片 */
+    .bing-card {
+        position: relative;
+        min-height: 180px;
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        align-items: flex-end;
+        color: #fff;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        transition: transform 0.3s ease;
+    }
+    .bing-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.7) 100%);
+    }
+    .bing-card > * { position: relative; z-index: 1; }
+
+    /* 进度条 */
+    .progress-track {
+        width: 100%;
+        height: 6px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        overflow: hidden;
+    }
+    .progress-fill {
+        height: 100%;
+        border-radius: 999px;
+        transition: width 1s ease;
+    }
+
+    /* 滚动条 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* 页脚 */
+    .footer {
+        background: #0a0a0a;
+        color: #94a3b8;
+        padding: 22px 0;
+        text-align: center;
+        font-size: 13px;
+        border-top: 1px solid #1a1a1a;
+    }
+    .footer a {
+        color: #38bdf8;
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.2s;
+    }
+    .footer a:hover { color: #fff; text-decoration: underline; }
+
+    /* 响应式 */
+    @media (max-width: 640px) {
+        .card-header { padding: 12px 14px 8px; }
+        .card-body { padding: 2px 14px 14px; }
+        .cards-grid { gap: 12px; grid-template-columns: 1fr; }
+        .hide-sm { display: none; }
+    }
+
+    /* 淡入 */
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.45s ease-out; }
+</style>
+</head>
+<body class="text-slate-800">
+
+<!-- ========== 头部 ========== -->
+<header class="glass-header sticky top-0 z-50">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="text-xl">🐟</span>
+            <h1 class="text-[15px] font-bold tracking-tight text-slate-900">60s 摸鱼看板</h1>
+        </div>
+
+        <!-- 中间：天气 + 日期（大屏显示） -->
+        <div id="header-info" class="hidden md:flex items-center gap-3 text-xs text-slate-500 flex-1 justify-center">
+            <span id="hdr-weather" class="flex items-center gap-1">
+                <span class="text-slate-400">加载中...</span>
+            </span>
+            <span class="text-slate-300">·</span>
+            <span id="hdr-date" class="font-medium text-slate-600"></span>
+            <span class="text-slate-300 hide-sm">·</span>
+            <span id="hdr-lunar" class="text-slate-400 hide-sm"></span>
+        </div>
+
+        <!-- 右侧：倒计时 -->
+        <div class="flex items-center gap-3 text-xs flex-shrink-0">
+            <div id="hdr-countdown" class="flex items-center gap-3 text-slate-600">
+                <span class="flex items-center gap-1">
+                    <span class="text-slate-400 text-[11px]">距下班</span>
+                    <span class="countdown-num text-indigo-600">--:--:--</span>
+                </span>
+                <span class="text-slate-300 hide-sm">·</span>
+                <span class="flex items-center gap-1 hide-sm">
+                    <span class="text-slate-400 text-[11px]">距周末</span>
+                    <span class="countdown-num text-emerald-600" id="hdr-weekend">--天</span>
+                </span>
+            </div>
+            <span class="text-slate-300 hide-sm">|</span>
+            <span id="refresh-status" class="text-emerald-500 hide-sm">● 自动刷新</span>
+        </div>
+    </div>
+</header>
+
+<!-- ========== 主内容 ========== -->
+<main class="max-w-[1400px] mx-auto px-4 sm:px-6 py-6">
+    <div id="cards" class="cards-grid"></div>
+</main>
+
+<footer class="footer">
+    <p>© <a href="https://news.itboy.pw" target="_blank">下一页更精彩 →</a></p>
+    <p class="mt-1.5 text-[11px] text-slate-600">数据来源：<a href="https://docs.60s-api.viki.moe" target="_blank">60s API</a></p>
+</footer>
+
+<script>
+/* ============================================================
+   配置
+============================================================ */
+const API_BASE = 'https://api.itboy.pw';
+const REFRESH_INTERVAL = 10 * 60 * 1000;
+const LS = {
+    oilRegion:   'dash:oilRegion',
+    weatherCity: 'dash:weatherCity',
+    hotTab:      'dash:hotTab',
+    marketTab:   'dash:marketTab',
+    funTab:      'dash:funTab',
+};
+
+const state = {
+    oilRegion:   localStorage.getItem(LS.oilRegion)   || '北京',
+    weatherCity: localStorage.getItem(LS.weatherCity) || '北京',
+    hotTab:      localStorage.getItem(LS.hotTab)      || 'weibo',
+    marketTab:   localStorage.getItem(LS.marketTab)   || 'oil',
+    funTab:      localStorage.getItem(LS.funTab)      || 'duanzi',
+};
+
+const abortMap = new Map();
+
+/* ============================================================
+   工具函数
+============================================================ */
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+function pad2(n) { return String(n).padStart(2, '0'); }
+function saveState(key, val) { localStorage.setItem(key, val); }
+
+/* ============================================================
+   卡片定义
+============================================================ */
+const CARDS = [
+    {
+        id: 'moyu',
+        name: '摸鱼日报',
+        icon: '🐟',
+        color: 'linear-gradient(135deg,#06b6d4,#0891b2)',
+        type: 'moyu',
+        url: '/v2/moyu',
+        refreshable: false,
+        span: 1,
+    },
+    {
+        id: 'news',
+        name: '60s 读懂世界',
+        icon: '🌍',
+        color: 'linear-gradient(135deg,#3b82f6,#2563eb)',
+        type: 'news',
+        url: '/v2/60s',
+        refreshable: true,
+        span: 1,
+    },
+    {
+        id: 'hot',
+        name: '实时热搜',
+        icon: '🔥',
+        color: 'linear-gradient(135deg,#f43f5e,#e11d48)',
+        type: 'hot',
+        refreshable: true,
+        hasTabs: 'hot',
+        span: 1,
+    },
+    {
+        id: 'weather',
+        name: '今日天气',
+        icon: '🌤️',
+        color: 'linear-gradient(135deg,#38bdf8,#0ea5e9)',
+        type: 'weather',
+        refreshable: true,
+        span: 1,
+    },
+    {
+        id: 'market',
+        name: '行情速览',
+        icon: '📈',
+        color: 'linear-gradient(135deg,#10b981,#059669)',
+        type: 'market',
+        refreshable: true,
+        hasTabs: 'market',
+        span: 1,
+    },
+    {
+        id: 'history',
+        name: '历史上的今天',
+        icon: '📅',
+        color: 'linear-gradient(135deg,#f59e0b,#d97706)',
+        type: 'history',
+        url: '/v2/today-in-history',
+        refreshable: false,
+        span: 1,
+    },
+    {
+        id: 'quote',
+        name: '一言',
+        icon: '💬',
+        color: 'linear-gradient(135deg,#a855f7,#7c3aed)',
+        type: 'quote',
+        url: '/v2/hitokoto',
+        refreshable: true,
+        span: 1,
+    },
+    {
+        id: 'fun',
+        name: '摸鱼充电站',
+        icon: '😄',
+        color: 'linear-gradient(135deg,#f97316,#ea580c)',
+        type: 'fun',
+        refreshable: true,
+        hasTabs: 'fun',
+        span: 1,
+    },
+    {
+        id: 'bing',
+        name: '必应每日壁纸',
+        icon: '🖼️',
+        color: 'linear-gradient(135deg,#64748b,#334155)',
+        type: 'bing',
+        url: '/v2/bing',
+        refreshable: true,
+        isFullImage: true,
+        span: 1,
+    },
+];
+
+const TABS = {
+    hot: [
+        { id: 'weibo', name: '微博', url: '/v2/weibo' },
+        { id: 'baidu', name: '百度', url: '/v2/baidu/hot' },
+        { id: 'zhihu', name: '知乎', url: '/v2/zhihu' },
+    ],
+    market: [
+        { id: 'oil',      name: '油价', url: '/v2/fuel-price' },
+        { id: 'gold',     name: '金价', url: '/v2/gold-price' },
+        { id: 'exchange', name: '汇率', url: '/v2/exchange-rate' },
+    ],
+    fun: [
+        { id: 'duanzi', name: '段子',   url: '/v2/duanzi' },
+        { id: 'joke',   name: '冷笑话', url: '/v2/dad-joke' },
+        { id: 'answer', name: '答案之书', url: '/v2/answer' },
+    ],
+};
+
+/* ============================================================
+   启动
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    buildCards();
+    refreshAll();
+    startHeaderClock();
+    startAutoRefresh();
+});
+
+function buildCards() {
+    const wrap = document.getElementById('cards');
+    wrap.innerHTML = CARDS.map(c => cardShell(c)).join('');
+
+    // 绑定 tab 事件
+    Object.keys(TABS).forEach(group => {
+        document.querySelectorAll(`[data-tabgroup="${group}"] .tab-btn`).forEach(btn => {
+            btn.addEventListener('click', () => {
+                const val = btn.dataset.tab;
+                if (group === 'hot')    { state.hotTab = val;    saveState(LS.hotTab, val); }
+                if (group === 'market') { state.marketTab = val; saveState(LS.marketTab, val); }
+                if (group === 'fun')    { state.funTab = val;    saveState(LS.funTab, val); }
+                // 高亮
+                btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                // 重新加载该卡片
+                const cardId = group === 'hot' ? 'hot' : group === 'market' ? 'market' : 'fun';
+                loadCard(CARDS.find(c => c.id === cardId));
+            });
+        });
+    });
+}
+
+function cardShell(card) {
+    const tabsHtml = card.hasTabs ? renderTabs(card.hasTabs) : '';
+    return `
+        <div class="card fade-up" id="card-${card.id}" data-cardid="${card.id}">
+            <div class="card-header">
+                <div class="flex items-center gap-2 min-w-0">
+                    <div class="card-icon" style="background:${card.color}">${card.icon}</div>
+                    <div class="card-title truncate">${escapeHtml(card.name)}</div>
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                    ${tabsHtml}
+                    ${card.refreshable ? `
+                    <button class="icon-btn" onclick="manualRefresh('${card.id}')" title="刷新">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>` : ''}
+                </div>
+            </div>
+            <div class="card-body" id="body-${card.id}">
+                ${skeleton(card.type)}
+            </div>
+        </div>`;
+}
+
+function renderTabs(group) {
+    const list = TABS[group];
+    const active = group === 'hot' ? state.hotTab : group === 'market' ? state.marketTab : state.funTab;
+    return `<div class="tabs" data-tabgroup="${group}">
+        ${list.map(t => `<button class="tab-btn ${t.id === active ? 'active' : ''}" data-tab="${t.id}">${t.name}</button>`).join('')}
+    </div>`;
+}
+
+function skeleton(type) {
+    if (type === 'bing') {
+        return `<div class="bing-card rounded-xl bg-slate-100 animate-pulse" style="min-height:180px"></div>`;
+    }
+    return `
+        <div class="space-y-3 py-2">
+            <div class="skeleton-line w-3/4"></div>
+            <div class="skeleton-line w-full"></div>
+            <div class="skeleton-line w-5/6"></div>
+            <div class="skeleton-line w-2/3"></div>
+        </div>`;
+}
+
+/* ============================================================
+   数据加载
+============================================================ */
+function refreshAll() {
+    CARDS.forEach(loadCard);
+}
+
+function startAutoRefresh() {
+    setInterval(() => {
+        CARDS.filter(c => c.refreshable).forEach(loadCard);
+    }, REFRESH_INTERVAL);
+}
+
+window.manualRefresh = function(id) {
+    const card = CARDS.find(c => c.id === id);
+    if (!card) return;
+    document.getElementById(`body-${id}`).innerHTML = skeleton(card.type);
+    loadCard(card);
+};
+
+async function loadCard(card) {
+    const body = document.getElementById(`body-${card.id}`);
+    if (!body) return;
+
+    // 解析实际请求的 URL
+    let url = card.url;
+    let params = {};
+
+    if (card.type === 'hot') {
+        const tab = TABS.hot.find(t => t.id === state.hotTab) || TABS.hot[0];
+        url = tab.url;
+    } else if (card.type === 'market') {
+        const tab = TABS.market.find(t => t.id === state.marketTab) || TABS.market[0];
+        url = tab.url;
+        if (tab.id === 'oil') params.region = state.oilRegion;
+    } else if (card.type === 'fun') {
+        const tab = TABS.fun.find(t => t.id === state.funTab) || TABS.fun[0];
+        url = tab.url;
+    } else if (card.type === 'weather') {
+        url = '/v2/weather/realtime';
+        params.city = state.weatherCity;
+    }
+
+    if (!url) {
+        body.innerHTML = `<div class="text-center text-slate-400 text-sm py-4">暂无数据源</div>`;
+        return;
+    }
+
+    // 中断上一次
+    if (abortMap.has(card.id)) {
+        abortMap.get(card.id).abort();
+        abortMap.delete(card.id);
+    }
+    const ctrl = new AbortController();
+    abortMap.set(card.id, ctrl);
+    const timer = setTimeout(() => ctrl.abort(), 9000);
+
+    const qs = new URLSearchParams({ ...params, t: Date.now() }).toString();
+
+    try {
+        const res = await fetch(`${API_BASE}${url}?${qs}`, { signal: ctrl.signal });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const json = await res.json();
+        const data = json.data !== undefined ? json.data : json;
+        renderCard(card, data, body);
+    } catch (e) {
+        clearTimeout(timer);
+        if (e.name !== 'AbortError') {
+            body.innerHTML = errorHtml(card.id);
+        }
+    } finally {
+        abortMap.delete(card.id);
+    }
+}
+
+function errorHtml(id) {
+    return `
+        <div class="flex flex-col items-center justify-center py-6 text-slate-400">
+            <svg class="w-7 h-7 mb-2 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <p class="text-xs">加载失败</p>
+            <button onclick="manualRefresh('${id}')" class="mt-2 text-xs text-blue-500 hover:underline">点击重试</button>
+        </div>`;
+}
+
+/* ============================================================
+   渲染分发
+============================================================ */
+function renderCard(card, data, body) {
+    switch (card.type) {
+        case 'moyu':    return renderMoyu(data, body);
+        case 'news':    return renderNews(data, body);
+        case 'hot':     return renderHot(data, body);
+        case 'weather': return renderWeather(data, body);
+        case 'market':  return renderMarket(data, body);
+        case 'history': return renderHistory(data, body);
+        case 'quote':   return renderQuote(data, body);
+        case 'fun':     return renderFun(data, body);
+        case 'bing':    return renderBing(data, body);
+    }
+}
+
+/* ============================================================
+   1. 摸鱼日报
+============================================================ */
+function renderMoyu(data, body) {
+    const date = data.date || {};
+    const progress = data.progress || {};
+    const nextHoliday = data.nextHoliday || {};
+    const nextWeekend = data.nextWeekend || {};
+    const weekday = date.weekday || '';
+    const mood = moodText(weekday, nextWeekend.daysUntil);
+    const quote = data.moyuQuote || '好好工作，努力摸鱼。';
+
+    const bar = (label, val, color) => `
+        <div class="mb-2.5">
+            <div class="flex justify-between text-[11px] mb-1">
+                <span class="text-slate-500">${escapeHtml(label)}</span>
+                <span class="font-bold text-slate-700">${Number(val) || 0}%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" style="width:${Math.min(100, Math.max(0, Number(val) || 0))}%;background:${color}"></div>
+            </div>
+        </div>`;
+
+    body.innerHTML = `
+        <div class="fade-up">
+            <div class="text-center pb-3 border-b border-dashed border-slate-100 mb-3">
+                <div class="text-[15px] font-bold text-slate-800">${escapeHtml(date.gregorian || '')} <span class="text-slate-500 font-medium">${escapeHtml(weekday)}</span></div>
+                <div class="text-[11px] text-slate-400 mt-1">农历${escapeHtml(date.lunar?.monthCN || '')}${escapeHtml(date.lunar?.dayCN || '')} · ${escapeHtml(date.lunar?.yearGanZhi || '')}${escapeHtml(date.lunar?.zodiac || '')}年</div>
+                <div class="mt-2 inline-block text-[12px] text-cyan-700 bg-cyan-50 rounded-full px-3 py-1">${escapeHtml(mood)}</div>
+            </div>
+            <div class="mb-3">
+                ${bar('本周进度', progress.week?.percentage, 'linear-gradient(90deg,#06b6d4,#0891b2)')}
+                ${bar('本月进度', progress.month?.percentage, 'linear-gradient(90deg,#8b5cf6,#7c3aed)')}
+                ${bar('今年进度', progress.year?.percentage, 'linear-gradient(90deg,#f59e0b,#d97706)')}
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+                <div class="bg-orange-50 rounded-xl p-2.5 text-center border border-orange-100">
+                    <div class="text-[10.5px] text-orange-500/80 mb-1">距离周末</div>
+                    <div class="text-xl font-extrabold text-orange-500">${Number(nextWeekend.daysUntil) || 0}<span class="text-xs font-normal ml-0.5">天</span></div>
+                </div>
+                <div class="bg-emerald-50 rounded-xl p-2.5 text-center border border-emerald-100">
+                    <div class="text-[10.5px] text-emerald-600/80 mb-1 truncate">距离${escapeHtml(nextHoliday.name || '假期')}</div>
+                    <div class="text-xl font-extrabold text-emerald-600">${Number(nextHoliday.until) || 0}<span class="text-xs font-normal ml-0.5">天</span></div>
+                </div>
+            </div>
+            <div class="mt-3 bg-slate-50 rounded-xl p-3 text-[12.5px] text-slate-600 italic border-l-[3px] border-cyan-400">
+                "${escapeHtml(quote)}"
+            </div>
+        </div>`;
+}
+
+function moodText(weekday, daysUntilWeekend) {
+    const map = {
+        '周一': '新的一周，摸鱼要有节奏感 ☕',
+        '周二': '坚持一下，周末在慢慢靠近 🐌',
+        '周三': '一周过半，小周末快乐 🎉',
+        '周四': '马上就到周五啦，稳住 🧘',
+        '周五': daysUntilWeekend <= 0 ? '周末在向你招手，冲！🎊' : '周五了，摸鱼进入冲刺阶段 🚀',
+        '周六': '周末时光，好好享受 🌿',
+        '周日': '明天又是新的一周，珍惜当下 🌅',
+    };
+    return map[weekday] || '好好工作，努力摸鱼 🐟';
+}
+
+/* ============================================================
+   2. 60s 新闻
+============================================================ */
+function renderNews(data, body) {
+    const list = Array.isArray(data) ? data : (data.news || data.list || []);
+    if (!list.length) {
+        body.innerHTML = `<div class="text-center text-slate-400 text-sm py-6">暂无新闻</div>`;
+        return;
+    }
+    body.innerHTML = `
+        <div class="fade-up">
+            <ul>
+                ${list.map((n, i) => `
+                    <li class="list-item">
+                        <span class="idx">${i + 1}</span>
+                        <span class="flex-1">${escapeHtml(n)}</span>
+                    </li>`).join('')}
+            </ul>
+        </div>`;
+}
+
+/* ============================================================
+   3. 热搜（Tab 切换）
+============================================================ */
+function renderHot(data, body) {
+    const list = normalizeList(data);
+    if (!list.length) {
+        body.innerHTML = `<div class="text-center text-slate-400 text-sm py-6">暂无热搜</div>`;
+        return;
+    }
+    body.innerHTML = `
+        <div class="fade-up">
+            <ul>
+                ${list.slice(0, 12).map((item, i) => {
+                    const title = item.title || item.name || item.word || item.query || '';
+                    const hot = item.hot || item.hotValue || item.heat || item.num || '';
+                    const url = item.url || item.link || item.mobilUrl || '#';
+                    const rank = i + 1;
+                    const cls = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : '';
+                    return `
+                        <li class="list-item">
+                            <span class="idx ${cls}">${rank}</span>
+                            <a href="${escapeHtml(url)}" target="_blank" rel="noopener"
+                               class="flex-1 hover:text-rose-600 transition-colors line-clamp-2">${escapeHtml(title)}</a>
+                            ${hot ? `<span class="hot-num">${formatHot(hot)}</span>` : ''}
+                        </li>`;
+                }).join('')}
+            </ul>
+        </div>`;
+}
+
+function normalizeList(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.list)) return data.list;
+    if (data && Array.isArray(data.data)) return data.data;
+    if (data && Array.isArray(data.items)) return data.items;
+    return [];
+}
+
+function formatHot(n) {
+    const num = Number(n);
+    if (!isFinite(num)) return String(n);
+    if (num >= 100000000) return (num / 100000000).toFixed(1) + '亿';
+    if (num >= 10000) return (num / 10000).toFixed(1) + '万';
+    return String(num);
+}
+
+/* ============================================================
+   4. 天气
+============================================================ */
+function renderWeather(data, body) {
+    const d = data || {};
+    const city = d.city || state.weatherCity;
+    const weather = d.weather || d.weatherDesc || d.condition || '';
+    const temp = d.temperature || d.temp || d.temperature_curr || '--';
+    const wind = d.windDirection || d.wind || '';
+    const windScale = d.windScale || d.wind_scale || '';
+    const humidity = d.humidity || '';
+    const icon = weatherEmoji(weather);
+
+    body.innerHTML = `
+        <div class="fade-up">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <div class="text-[12px] text-slate-500 mb-1 flex items-center gap-1 cursor-pointer hover:text-sky-600 transition-colors"
+                         onclick="changeWeatherCity()">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span class="underline decoration-dotted underline-offset-2">${escapeHtml(city)}</span>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <div class="weather-temp">${escapeHtml(String(temp))}<span class="text-lg font-semibold text-slate-400 ml-0.5">°C</span></div>
+                    </div>
+                    <div class="text-[12.5px] text-slate-500 mt-1">${escapeHtml(weather)} ${wind ? `· ${escapeHtml(wind)}${escapeHtml(windScale)}` : ''}</div>
+                </div>
+                <div class="text-5xl select-none">${icon}</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                <div class="bg-sky-50 rounded-lg p-2 text-center border border-sky-100">
+                    <div class="text-[10.5px] text-sky-600/80 mb-0.5">湿度</div>
+                    <div class="text-sm font-bold text-sky-700">${escapeHtml(humidity || '--')}</div>
+                </div>
+                <div class="bg-indigo-50 rounded-lg p-2 text-center border border-indigo-100">
+                    <div class="text-[10.5px] text-indigo-600/80 mb-0.5">风力</div>
+                    <div class="text-sm font-bold text-indigo-700">${escapeHtml(windScale || '--')}</div>
+                </div>
+            </div>
+        </div>`;
+}
+
+window.changeWeatherCity = function() {
+    const v = prompt('输入城市名（如：北京、上海、广州）', state.weatherCity);
+    if (v && v.trim()) {
+        state.weatherCity = v.trim();
+        saveState(LS.weatherCity, state.weatherCity);
+        const card = CARDS.find(c => c.id === 'weather');
+        document.getElementById('body-weather').innerHTML = skeleton('weather');
+        loadCard(card);
+    }
+};
+
+function weatherEmoji(w) {
+    if (!w) return '🌤️';
+    if (w.includes('雷')) return '⛈️';
+    if (w.includes('雪')) return '❄️';
+    if (w.includes('雨')) return '🌧️';
+    if (w.includes('阴')) return '☁️';
+    if (w.includes('云') || w.includes('多云')) return '⛅';
+    if (w.includes('晴')) return '☀️';
+    if (w.includes('雾') || w.includes('霾')) return '🌫️';
+    return '🌤️';
+}
+
+/* ============================================================
+   5. 行情（油价 / 金价 / 汇率）
+============================================================ */
+function renderMarket(data, body) {
+    if (state.marketTab === 'oil')     return renderOil(data, body);
+    if (state.marketTab === 'gold')    return renderGold(data, body);
+    if (state.marketTab === 'exchange') return renderExchange(data, body);
+}
+
+function renderOil(data, body) {
+    const region = data.region || state.oilRegion;
+    const items = data.items || [];
+    const updated = data.updated ? String(data.updated).split(' ')[0] : '';
+
+    if (!items.length) {
+        body.innerHTML = `<div class="text-center text-slate-400 text-sm py-6">暂无油价数据</div>`;
+        return;
+    }
+
+    body.innerHTML = `
+        <div class="fade-up">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-dashed border-slate-100">
+                <div class="text-[12.5px] text-emerald-700 font-bold flex items-center gap-1 cursor-pointer hover:text-emerald-900"
+                     onclick="changeOilRegion()">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span class="underline decoration-dotted underline-offset-2">${escapeHtml(region)}</span>
+                </div>
+                <span class="text-[10px] text-slate-400">${escapeHtml(updated)}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+                ${items.map(item => {
+                    const name = item.name || '';
+                    const isMain = name.includes('92') || name.includes('95');
+                    const short = name.replace('汽油', '').replace('柴油', '');
+                    return `
+                        <div class="rounded-xl p-2.5 text-center border ${isMain ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50/60 border-emerald-100'}">
+                            <div class="text-[10.5px] text-slate-500 mb-1 flex items-center justify-center gap-0.5">
+                                ${isMain ? '<span class="text-amber-500">⭐</span>' : ''}${escapeHtml(short)}
+                            </div>
+                            <div class="text-lg font-extrabold text-emerald-700">${escapeHtml(item.price)}</div>
+                            <div class="text-[10px] text-slate-400">元/升</div>
+                        </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+}
+
+window.changeOilRegion = function() {
+    const v = prompt('输入城市名（如：北京、上海、广东）', state.oilRegion);
+    if (v && v.trim()) {
+        state.oilRegion = v.trim();
+        saveState(LS.oilRegion, state.oilRegion);
+        const card = CARDS.find(c => c.id === 'market');
+        document.getElementById('body-market').innerHTML = skeleton('market');
+        loadCard(card);
+    }
+};
+
+function renderGold(data, body) {
+    const metals = data.metals || data.items || data.list || [];
+    if (!Array.isArray(metals) || !metals.length) {
+        body.innerHTML = `<div class="text-center text-slate-400 text-sm py-6">暂无金价数据</div>`;
+        return;
+    }
+    body.innerHTML = `
+        <div class="fade-up">
+            <div class="grid grid-cols-2 gap-2.5">
+                ${metals.slice(0, 6).map(m => {
+                    const name = m.name || m.metal || '';
+                    const price = m.today_price || m.price || m.todayPrice || '--';
+                    const change = String(m.change || m.change_amount || m.changeAmount || '');
+                    const up = change.includes('+') || Number(change) > 0;
+                    const down = change.includes('-') || Number(change) < 0;
+                    const cls = up ? 'text-rose-500' : down ? 'text-emerald-500' : 'text-slate-400';
+                    const arrow = up ? '↑' : down ? '↓' : '';
+                    return `
+                        <div class="rounded-xl p-2.5 border border-amber-100 bg-amber-50/60 text-center">
+                            <div class="text-[11px] text-slate-500 mb-1">${escapeHtml(name)}</div>
+                            <div class="font-extrabold text-slate-800 text-[15px]">${escapeHtml(price)}</div>
+                            ${change ? `<div class="text-[10.5px] ${cls} mt-0.5">${arrow} ${escapeHtml(change)}</div>` : ''}
+                        </div>`;
+                }).join('')}
+            </div>
+            <p class="text-[10px] text-slate-400 mt-3">* 国内金价单位 元/克，国际金价 美元/盎司</p>
+        </div>`;
+}
+
+function renderExchange(data, body) {
+    const list = Array.isArray(data) ? data : (data.list || data.items || data.rates || []);
+    if (!list.length) {
+        body.innerHTML = `<div class="text-center text-slate-400 text-sm py-6">暂无汇率数据</div>`;
+        return;
+    }
+    body.innerHTML = `
+        <div class="fade-up">
+            <ul>
+                ${list.slice(0, 10).map(item => {
+                    const name = item.name || item.currency || item.currencyName || '';
+                    const rate = item.rate || item.value || item.price || '--';
+                    const unit = item.unit || 100;
+                    const code = item.code || item.currencyCode || '';
+                    return `
+                        <li class="list-item">
+                            <span class="flex-1">${escapeHtml(name)} ${code ? `<span class="text-[10px] text-slate-400">${escapeHtml(code)}</span>` : ''}</span>
+                            <span class="font-bold text-slate-700 text-[13px]">${escapeHtml(String(rate))}</span>
+                            <span class="text-[10px] text-slate-400 self-center ml-1">/${unit}</span>
+                        </li>`;
+                }).join('')}
+            </ul>
+        </div>`;
+}
+
+/* ============================================================
+   6. 历史上的今天
+============================================================ */
+function renderHistory(data, body) {
+    let items = [];
+    let dateStr = '';
+
+    if (data && Array.isArray(data.items)) {
+        items = data.items;
+        dateStr = data.date || '';
+    } else if (Array.isArray(data)) {
+        items = data;
+    } else if (data && typeof data === 'object') {
+        items = Object.entries(data).map(([year, title]) => ({ year, title }));
+    }
+
+    if (!items.length) {
+        body.innerHTML = `<div class="text-center text-slate-400 text-sm py-6">暂无历史记录</div>`;
+        return;
+    }
+
+    body.innerHTML = `
+        <div class="fade-up">
+            ${dateStr ? `<div class="mb-3"><span class="bg-amber-100 text-amber-700 text-[11px] font-bold px-2 py-0.5 rounded">📅 ${escapeHtml(dateStr)}</span></div>` : ''}
+            <ul class="relative border-l border-amber-200 ml-1.5 pl-4">
+                ${items.slice(0, 8).map(item => {
+                    const year = parseInt(item.year || item.date || 0, 10);
+                    const title = item.title || item.event || item;
+                    const link = item.link || null;
+                    const type = item.event_type || item.type || '';
+                    const icon = type === 'birth' ? '👶' : type === 'death' ? '🪦' : '';
+                    const safeTitle = typeof title === 'string' ? title : (title.title || JSON.stringify(title));
+
+                    let yearCls = 'text-slate-500 bg-slate-100';
+                    if (year < 1900) yearCls = 'text-amber-800 bg-amber-100';
+                    else if (year < 2000) yearCls = 'text-orange-700 bg-orange-100';
+
+                    const titleHtml = link
+                        ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" class="text-[13px] text-slate-700 leading-snug block hover:text-amber-700 transition line-clamp-2">${escapeHtml(safeTitle)}</a>`
+                        : `<span class="text-[13px] text-slate-700 leading-snug block line-clamp-2">${escapeHtml(safeTitle)}</span>`;
+
+                    return `
+                        <li class="relative mb-3 last:mb-0">
+                            <span class="absolute -left-[22.5px] top-1 w-2 h-2 bg-amber-400 rounded-full ring-4 ring-white"></span>
+                            <div class="flex items-center gap-1.5 mb-0.5">
+                                <span class="font-mono font-bold text-[10.5px] px-1 rounded ${yearCls}">${escapeHtml(String(year || '?'))}</span>
+                                ${icon ? `<span class="text-[11px]">${icon}</span>` : ''}
+                            </div>
+                            ${titleHtml}
+                        </li>`;
+                }).join('')}
+            </ul>
+        </div>`;
+}
+
+/* ============================================================
+   7. 一言
+============================================================ */
+function renderQuote(data, body) {
+    const text = data.hitokoto || data.text || data.content || '生活不止眼前的苟且，还有诗和远方。';
+    const from = data.from || data.source || data.author || '佚名';
+    body.innerHTML = `
+        <div class="fade-up quote-box">
+            <span class="quote-mark">"</span>
+            <p class="text-[15px] text-slate-700 font-medium italic relative z-10 my-2 px-2 leading-relaxed">${escapeHtml(text)}</p>
+            <div class="text-[11.5px] text-right text-slate-400 mt-2 pr-2">—— ${escapeHtml(from)}</div>
+        </div>`;
+}
+
+/* ============================================================
+   8. 摸鱼充电站（段子 / 冷笑话 / 答案之书）
+============================================================ */
+function renderFun(data, body) {
+    let text = '';
+    if (state.funTab === 'duanzi')      text = data.duanzi || data.text || data.content || '';
+    else if (state.funTab === 'joke')   text = data.joke || data.text || data.content || '';
+    else if (state.funTab === 'answer') text = data.answer || data.text || data.content || data.title || '';
+
+    if (typeof data === 'string') text = data;
+    if (!text) text = '生活就是一边摸鱼，一边假装很忙。';
+
+    body.innerHTML = `
+        <div class="fade-up py-2">
+            <p class="text-[14px] text-slate-700 leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</p>
+            <div class="text-right mt-3">
+                <span class="text-[11px] text-slate-400">— 摸鱼充电站</span>
+            </div>
+        </div>`;
+}
+
+/* ============================================================
+   9. 必应壁纸
+============================================================ */
+function renderBing(data, body) {
+    const url = data.url || data.image || data.img || data.urlbase || '';
+    const title = data.title || data.copyright || data.desc || '';
+    const copyright = data.copyright || '';
+
+    if (!url) {
+        body.innerHTML = `<div class="text-center text-slate-400 text-sm py-6">暂无壁纸</div>`;
+        return;
+    }
+
+    // 清掉 body 的 padding，让图铺满
+    body.style.padding = '0';
+    body.innerHTML = `
+        <div class="bing-card fade-up" style="background-image:url('${escapeHtml(url)}')">
+            <div class="w-full p-4">
+                <div class="text-[13px] font-bold leading-snug line-clamp-2">${escapeHtml(title)}</div>
+                ${copyright ? `<div class="text-[10.5px] opacity-80 mt-1">${escapeHtml(copyright)}</div>` : ''}
+            </div>
+        </div>`;
+}
+
+/* ============================================================
+   头部时钟（下班倒计时 + 周末倒计时 + 日期）
+============================================================ */
+function startHeaderClock() {
+    // 日期
+    const now = new Date();
+    const weekMap = ['周日','周一','周二','周三','周四','周五','周六'];
+    document.getElementById('hdr-date').textContent =
+        `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())} ${weekMap[now.getDay()]}`;
+
+    // 每秒更新
+    tickHeader();
+    setInterval(tickHeader, 1000);
+}
+
+function tickHeader() {
+    const now = new Date();
+    const cdEl = document.querySelector('#hdr-countdown .countdown-num');
+    const offEl = cdEl;
+    const wkEl = document.getElementById('hdr-weekend');
+
+    // 下班倒计时
+    const off = new Date(now);
+    off.setHours(18, 0, 0, 0);
+    if (now < off && now.getHours() >= 9) {
+        const diff = off - now;
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        offEl.textContent = `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+        offEl.classList.remove('text-emerald-600');
+        offEl.classList.add('text-indigo-600');
+    } else {
+        offEl.textContent = '已下班 🎉';
+        offEl.classList.remove('text-indigo-600');
+        offEl.classList.add('text-emerald-600');
+    }
+
+    // 周末倒计时
+    const day = now.getDay(); // 0=日 1=一 ... 6=六
+    let daysToWeekend;
+    if (day === 0) daysToWeekend = 6;
+    else if (day === 6) daysToWeekend = 0;
+    else daysToWeekend = 6 - day;
+
+    wkEl.textContent = daysToWeekend === 0 ? '今天 🎊' : `${daysToWeekend}天`;
+}
+
+/* ============================================================
+   头部天气（复用天气卡片的数据）
+============================================================ */
+const _origRenderWeather = renderWeather;
+renderWeather = function(data, body) {
+    _origRenderWeather(data, body);
+    // 更新头部
+    const city = data.city || state.weatherCity;
+    const weather = data.weather || data.weatherDesc || '';
+    const temp = data.temperature || data.temp || '--';
+    const icon = weatherEmoji(weather);
+    const hdr = document.getElementById('hdr-weather');
+    if (hdr) {
+        hdr.innerHTML = `
+            <span>${icon}</span>
+            <span class="font-medium text-slate-600">${escapeHtml(city)}</span>
+            <span class="font-bold text-slate-800">${escapeHtml(String(temp))}°</span>
+            <span class="text-slate-400 hide-sm">${escapeHtml(weather)}</span>
+        `;
+    }
+};
+</script>
+</body>
+</html>
